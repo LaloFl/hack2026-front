@@ -2,7 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lecture, Training } from "@/app/models/models";
+import { Lecture } from "@/app/models/models";
 import { MOCK_LECTURES, MOCK_TRAININGS } from "@/app/models/mocks";
 
 interface PageProps {
@@ -254,42 +254,92 @@ export default function Page({ params }: PageProps) {
     MOCK_TRAININGS.find((t) => t.lectures[0]?.lecture_id === slug)?.name ??
     "Unknown Training";
 
-  const [edits, setEdits] = useState<Record<string, string>>(
-    Object.fromEntries(MOCK_LECTURES.map((l) => [l.id, l.content])),
-  );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // const [edits, setEdits] = useState<Record<string, string>>(
+  //   Object.fromEntries(MOCK_LECTURES.map((l) => [l.id, l.content])),
+  // );
+  const [lectures, setLectures] = useState<Lecture[]>(MOCK_LECTURES);
+  const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const selectedLecture =
-    MOCK_LECTURES.find((l) => l.id === selectedId) ?? null;
-  const currentContent = selectedId ? edits[selectedId] : "";
-
   function handleSelectLecture(id: string) {
-    setSelectedId(id);
+    const lecture = lectures.find((l) => l.id === id);
+    setSelectedLecture(lecture || null);
     setShowPreview(false);
   }
 
   function handleContentChange(value: string) {
-    if (!selectedId) return;
-    setEdits((prev) => ({ ...prev, [selectedId]: value }));
+    if (!selectedLecture) return;
+    setSelectedLecture({ ...selectedLecture, content: value });
+    setLectures((prev) =>
+      prev.map((lec) =>
+        lec.id === selectedLecture.id ? { ...lec, content: value } : lec,
+      ),
+    );
   }
 
   async function handleEnhance() {
-    if (!selectedId) return;
+    if (!selectedLecture) return;
     setIsEnhancing(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setEdits((prev) => ({
-      ...prev,
-      [selectedId]:
-        prev[selectedId] + "\n\n> ✨ Enhanced content will be appended here.",
-    }));
-    setIsEnhancing(false);
+
+    try {
+      const response = await fetch("http://localhost:8000/enhance-lesson-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lesson_id: selectedLecture.id,
+          lesson_name: selectedLecture.title,
+          lesson_content: selectedLecture.content,
+        }),
+      });
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedContent = "";
+      // Clean the existing content before streaming new enhancement
+      setSelectedLecture({ ...selectedLecture, content: "" });
+
+      // Read the stream and update content in real-time
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        streamedContent += chunk;
+
+        // Update the textarea with the streamed content
+        setSelectedLecture((prev) =>
+          prev ? { ...prev, content: streamedContent } : prev,
+        );
+
+        // Scroll to bottom to show new content
+        const textarea = document.querySelector("textarea");
+        if (textarea) {
+          textarea.scrollTop = textarea.scrollHeight;
+        }
+      }
+
+      // Update the list of lectures with the enhanced content
+      setLectures((prev) =>
+        prev.map((lec) =>
+          lec.id === selectedLecture.id ? { ...lec, content: streamedContent } : lec,
+        ),
+      );
+    } catch (error) {
+      console.error("Enhancement failed:", error);
+    } finally {
+      setIsEnhancing(false);
+    }
   }
 
   function handleSubmit() {
-    sessionStorage.setItem("lectureEdits", JSON.stringify(edits));
     router.push(`/admin/create/${slug}/preview`);
   }
 
@@ -300,7 +350,7 @@ export default function Page({ params }: PageProps) {
       {showPreview && selectedLecture && (
         <PreviewModal
           lecture={selectedLecture}
-          content={currentContent}
+          content={selectedLecture.content}
           onClose={() => setShowPreview(false)}
         />
       )}
@@ -362,6 +412,7 @@ export default function Page({ params }: PageProps) {
                         <button
                           onClick={() => setShowPreview(true)}
                           className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-light-teal hover:text-light-teal transition-all"
+                          disabled={!selectedLecture.content || isEnhancing}
                         >
                           Preview
                         </button>
@@ -376,20 +427,20 @@ export default function Page({ params }: PageProps) {
                 </div>
 
                 <textarea
-                  className="w-full flex-1 min-h-[220px] resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
+                  className="w-full flex-1 min-h-[220px] resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-[10px] text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
                   placeholder={
                     selectedLecture
                       ? "Edit lecture markdown here..."
                       : "← Select a lecture to start editing"
                   }
-                  value={currentContent}
+                  value={selectedLecture ? selectedLecture.content : ""}
                   onChange={(e) => handleContentChange(e.target.value)}
-                  disabled={!selectedId}
+                  disabled={!selectedLecture || isEnhancing}
                 />
 
                 <button
                   onClick={handleEnhance}
-                  disabled={!selectedId || isEnhancing}
+                  disabled={!selectedLecture || isEnhancing}
                   className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
@@ -404,20 +455,19 @@ export default function Page({ params }: PageProps) {
               </label>
 
               <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-[520px] pr-1">
-                {MOCK_LECTURES.map((lecture, i) => {
-                  const isSelected = selectedId === lecture.id;
-                  const isDirty = edits[lecture.id] !== lecture.content;
+                {lectures.map((lecture, i) => {
+                  const isSelected = selectedLecture?.id === lecture.id;
+                  const isDirty = false; // Since we're not tracking edits anymore
 
                   return (
                     <button
                       key={lecture.id}
                       onClick={() => handleSelectLecture(lecture.id)}
                       className={`w-full text-left px-4 py-3 rounded-xl border transition-all
-                                                ${
-                                                  isSelected
-                                                    ? "border-light-teal bg-light-teal/5 shadow-sm"
-                                                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                                                }`}
+                                                ${isSelected
+                          ? "border-light-teal bg-light-teal/5 shadow-sm"
+                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">

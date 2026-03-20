@@ -18,4 +18,5 @@ export interface Lecture {
   title: string;
   type: "Lecture" | "Quiz";
   content: string;
+  enhancedContent?: string;
 }

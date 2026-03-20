@@ -139,6 +139,7 @@ const name: string = "Alice";
 const age: number = 30;
 const active: boolean = true;
 \`\`\``,
+    enhancedContent: "",
   },
   {
     id: "2",
@@ -165,6 +166,7 @@ type Status = "active" | "inactive" | "pending";
 ### Key difference
 Use \`interface\` when defining object shapes — it supports _declaration merging_.
 Use \`type\` for unions, primitives, and more complex compositions.`,
+    enhancedContent: "",
   },
   {
     id: "3",
@@ -201,5 +203,6 @@ Use \`type\` for unions, primitives, and more complex compositions.`,
 - interface Status = "active" | "inactive"
 - type Status = "active" & "inactive"
 - const Status: union = ["active", "inactive"]`,
+    enhancedContent: "",
   },
 ];
