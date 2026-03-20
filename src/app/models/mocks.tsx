@@ -122,7 +122,7 @@ export const MOCK_LECTURES: Lecture[] = [
     id: "1",
     title: "Introduction to TypeScript",
     type: "Lecture",
-    content: `## Introduction to TypeScript
+    description: `## Introduction to TypeScript
 
 TypeScript is a **typed superset of JavaScript** that compiles to plain JavaScript.
 
@@ -144,7 +144,7 @@ const active: boolean = true;
     id: "2",
     title: "Interfaces and Type Aliases",
     type: "Lecture",
-    content: `## Interfaces and Type Aliases
+    description: `## Interfaces and Type Aliases
 
 Both **interfaces** and **type aliases** allow you to define the shape of an object.
 
@@ -170,7 +170,7 @@ Use \`type\` for unions, primitives, and more complex compositions.`,
     id: "3",
     title: "TypeScript Basics Quiz",
     type: "Quiz",
-    content: `## Quiz: TypeScript Basics
+    description: `## Quiz: TypeScript Basics
 
 ?> What is TypeScript?
 - A JavaScript runtime environment
@@ -188,7 +188,7 @@ Use \`type\` for unions, primitives, and more complex compositions.`,
     id: "4",
     title: "Interfaces and Types Quiz",
     type: "Quiz",
-    content: `## Quiz: Interfaces and Types
+    description: `## Quiz: Interfaces and Types
 
 ?> What keyword is used to define an interface in TypeScript?
 - type

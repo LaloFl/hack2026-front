@@ -1,9 +1,16 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lecture, Training } from "@/app/models/models";
-import { MOCK_LECTURES, MOCK_TRAININGS } from "@/app/models/mocks";
+import { Lecture } from "@/app/models/models";
+import { MOCK_TRAININGS } from "@/app/models/mocks";
+import {
+  MarkdownHintModal,
+  parseQuizMarkdown,
+  QuizCard,
+  renderMarkdown,
+  TYPE_STYLES,
+} from "@/utils/markdown";
 
 interface PageProps {
   params: Promise<{
@@ -11,170 +18,8 @@ interface PageProps {
   }>;
 }
 
-const TYPE_STYLES: Record<Lecture["type"], string> = {
-  Lecture: "bg-light-teal/10 text-light-teal border-light-teal/30",
-  Quiz: "bg-yellow/10 text-yellow border-yellow/30",
-};
-
-// --- Markdown renderer (no external lib needed) ---
-function renderMarkdown(content: string): string {
-  return content
-    .replace(
-      /^### (.+)$/gm,
-      '<h3 class="text-base font-semibold text-gray-800 mt-4 mb-1">$1</h3>',
-    )
-    .replace(
-      /^## (.+)$/gm,
-      '<h2 class="text-lg font-semibold text-gray-900 mt-5 mb-2">$1</h2>',
-    )
-    .replace(
-      /^# (.+)$/gm,
-      '<h1 class="text-xl font-bold text-gray-900 mt-6 mb-2">$1</h1>',
-    )
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/_(.+?)_/g, "<em>$1</em>")
-    .replace(
-      /`([^`]+)`/g,
-      '<code class="bg-gray-100 text-light-teal px-1 py-0.5 rounded text-xs font-mono">$1</code>',
-    )
-    .replace(
-      /```[\w]*\n([\s\S]*?)```/g,
-      '<pre class="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs font-mono overflow-x-auto my-3"><code>$1</code></pre>',
-    )
-    .replace(
-      /^- (.+)$/gm,
-      '<li class="ml-4 list-disc text-gray-700 text-sm">$1</li>',
-    )
-    .replace(
-      /^> (.+)$/gm,
-      '<blockquote class="border-l-4 border-light-teal pl-3 text-gray-500 italic text-sm my-2">$1</blockquote>',
-    )
-    .replace(/\n{2,}/g, '<br class="my-2" />');
-}
-
-// --- Quiz parser + renderer ---
-interface QuizQuestion {
-  question: string;
-  options: { text: string; correct: boolean }[];
-}
-
-function parseQuizMarkdown(markdown: string): QuizQuestion[] {
-  const questions: QuizQuestion[] = [];
-  const blocks = markdown.split("?>").filter(Boolean);
-  for (const block of blocks) {
-    const lines = block.trim().split("\n").filter(Boolean);
-    const question = lines[0].trim();
-    const options = lines
-      .slice(1)
-      .map((line) => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("* "))
-          return { text: trimmed.slice(2), correct: true };
-        if (trimmed.startsWith("- "))
-          return { text: trimmed.slice(2), correct: false };
-        return null;
-      })
-      .filter(Boolean) as { text: string; correct: boolean }[];
-    if (question && options.length > 0) questions.push({ question, options });
-  }
-  return questions;
-}
-
-function QuizCard({ question, options }: QuizQuestion) {
-  const [selected, setSelected] = useState<number | null>(null);
-
-  const getStyle = (index: number, correct: boolean) => {
-    if (selected === null)
-      return "border-gray-200 hover:border-dark-teal cursor-pointer";
-    if (index === selected && correct)
-      return "border-light-teal bg-light-teal/10 text-light-teal";
-    if (index === selected && !correct)
-      return "border-red-400 bg-red-50 text-red-600";
-    if (correct) return "border-light-teal bg-light-teal/10 text-light-teal";
-    return "border-gray-100 opacity-50";
-  };
-
-  return (
-    <div className="flex flex-col gap-3 p-4 rounded-xl border border-gray-200 bg-white">
-      <p className="text-sm font-semibold text-gray-800">{question}</p>
-      <div className="flex flex-col gap-2">
-        {options.map((opt, i) => (
-          <button
-            key={i}
-            disabled={selected !== null}
-            onClick={() => setSelected(i)}
-            className={`text-left px-4 py-2 rounded-xl border text-sm transition-all ${getStyle(i, opt.correct)}`}
-          >
-            {opt.text}
-          </button>
-        ))}
-      </div>
-      {selected !== null && (
-        <p
-          className={`text-xs font-medium ${options[selected].correct ? "text-light-teal" : "text-red-500"}`}
-        >
-          {options[selected].correct
-            ? "✓ Correct!"
-            : `✗ Correct answer: ${options.find((o) => o.correct)?.text}`}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// --- Markdown hint modal ---
-const MARKDOWN_HINTS = [
-  { syntax: "## Heading", description: "Section heading" },
-  { syntax: "### Subheading", description: "Subsection heading" },
-  { syntax: "**bold**", description: "Bold text" },
-  { syntax: "_italic_", description: "Italic text" },
-  { syntax: "`code`", description: "Inline code" },
-  { syntax: "```ts\ncode\n```", description: "Code block" },
-  { syntax: "- item", description: "Bullet list item" },
-  { syntax: "> note", description: "Blockquote / callout" },
-  { syntax: "?> Question\n* Correct\n- Wrong", description: "Quiz question" },
-];
-
-function MarkdownHintModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">
-            Markdown syntax guide
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="p-5 flex flex-col gap-2">
-          {MARKDOWN_HINTS.map((hint) => (
-            <div key={hint.syntax} className="flex items-start gap-3">
-              <code className="text-xs bg-gray-100 text-light-teal px-2 py-1 rounded-lg font-mono whitespace-pre shrink-0">
-                {hint.syntax}
-              </code>
-              <span className="text-xs text-gray-500 pt-1">
-                {hint.description}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // --- Preview modal ---
-function PreviewModal({
+export function PreviewModal({
   lecture,
   content,
   onClose,
@@ -250,25 +95,83 @@ export default function Page({ params }: PageProps) {
   const router = useRouter();
   const { slug } = use(params);
 
+  const [data, setData] = useState("");
+  const [lectures, setLectures] = useState<Lecture[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch the streaming endpoint
+        const response = await fetch(
+          `http://localhost:8000/generate-course-stream?transcript_name=${encodeURIComponent(slug)}.txt`,
+        );
+        if (!response.ok || !response.body) {
+          throw new Error("Failed to fetch stream");
+        }
+
+        // Get a reader from the response body and a decoder for text
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let accumulatedData = "";
+
+        // Read the stream chunk by chunk
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          // Decode the chunk (Uint8Array) into a string
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedData += chunk;
+          // Update the state with the accumulated data, triggering re-renders
+          setData(accumulatedData);
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unknown error occurred.");
+        }
+      } finally {
+        const response = await fetch(`http://localhost:8000/courses/${slug}`);
+        const data: { lectures: Lecture[] } = await response.json();
+        data.lectures.forEach((lecture: any) => {
+          lecture.id = crypto.randomUUID();
+          lecture.type = "Lecture";
+        });
+        setLectures(data.lectures);
+        setEdits(
+          Object.fromEntries(
+            data.lectures.map((l) => [l.id, l.description || ""]),
+          ),
+        );
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const trainingName =
     MOCK_TRAININGS.find((t) => t.lectures[0]?.lecture_id === slug)?.name ??
     "Unknown Training";
 
   const [edits, setEdits] = useState<Record<string, string>>(
-    Object.fromEntries(MOCK_LECTURES.map((l) => [l.id, l.content])),
+    Object.fromEntries(lectures.map((l) => [l.id, l.description || ""])),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
-  const selectedLecture =
-    MOCK_LECTURES.find((l) => l.id === selectedId) ?? null;
-  const currentContent = selectedId ? edits[selectedId] : "";
+  const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
 
   function handleSelectLecture(id: string) {
     setSelectedId(id);
-    setShowPreview(false);
+    setSelectedLecture(lectures.find((l) => l.id === id) ?? null);
   }
 
   function handleContentChange(value: string) {
@@ -288,6 +191,45 @@ export default function Page({ params }: PageProps) {
     setIsEnhancing(false);
   }
 
+  async function handleGenerateQuiz() {
+    if (!selectedId) return;
+    setIsEnhancing(true);
+    const quizId = crypto.randomUUID();
+    const quizJson: Lecture = {
+      id: quizId,
+      type: "Quiz",
+      quiz_questions: [
+        {
+          question: "What is the capital of France?",
+          options: [
+            { option: "Paris", is_correct: true },
+            { option: "London", is_correct: false },
+            { option: "Berlin", is_correct: false },
+            { option: "Madrid", is_correct: false },
+          ],
+        },
+      ],
+      tags: selectedLecture?.tags,
+    };
+    quizJson.title = `Quiz for: ${selectedLecture?.title}`;
+    setLectures([...lectures, quizJson as Lecture]);
+    const quizContent =
+      quizJson?.quiz_questions
+        ?.map(
+          (q) =>
+            `?> ${q.question}\n` +
+            q.options
+              .map((o) => `${o.is_correct ? "* " : "- "}${o.option}`)
+              .join("\n"),
+        )
+        .join("\n\n") + "\n\n";
+    setEdits((prev) => ({
+      ...prev,
+      [quizId]: quizContent,
+    }));
+    setIsEnhancing(false);
+  }
+
   function handleSubmit() {
     sessionStorage.setItem("lectureEdits", JSON.stringify(edits));
     router.push(`/admin/create/${slug}/preview`);
@@ -300,7 +242,7 @@ export default function Page({ params }: PageProps) {
       {showPreview && selectedLecture && (
         <PreviewModal
           lecture={selectedLecture}
-          content={currentContent}
+          content={edits[selectedId || ""] || ""}
           onClose={() => setShowPreview(false)}
         />
       )}
@@ -318,7 +260,7 @@ export default function Page({ params }: PageProps) {
               </h1>
             </div>
             <span className="text-xs bg-light-teal/10 text-light-teal border border-light-teal/20 rounded-full px-3 py-1">
-              {MOCK_LECTURES.length} lectures
+              {lectures ? lectures.length : "No "} lectures
             </span>
           </div>
 
@@ -328,131 +270,178 @@ export default function Page({ params }: PageProps) {
               {/* Thumbnail */}
               <div className="rounded-xl overflow-hidden border border-gray-200 h-[180px] bg-gray-100 flex items-center justify-center">
                 <img
-                  src="/placeholder-training.jpg"
+                  src={
+                    MOCK_TRAININGS.find(
+                      (t) => t.lectures[0]?.lecture_id === slug,
+                    )?.primary_image_url
+                  }
                   alt="Training thumbnail"
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <span className="text-gray-400 text-sm absolute">
-                  No preview available
-                </span>
               </div>
 
               {/* Editor */}
-              <div className="flex flex-col gap-2 flex-1">
-                {/* Toolbar row */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Lecture content
-                    </label>
-                    <button
-                      onClick={() => setShowHints(true)}
-                      className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 hover:border-light-teal hover:text-light-teal transition-all text-xs font-semibold flex items-center justify-center"
-                      title="Markdown syntax guide"
-                    >
-                      ?
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {selectedLecture && (
-                      <>
-                        <button
-                          onClick={() => setShowPreview(true)}
-                          className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-light-teal hover:text-light-teal transition-all"
-                        >
-                          Preview
-                        </button>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[selectedLecture.type]}`}
-                        >
-                          {selectedLecture.type}
-                        </span>
-                      </>
-                    )}
-                  </div>
+              {isLoading ? (
+                <div className="flex-1 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-gray-200 animate-pulse">
+                  <p>Loading lectures...</p>
                 </div>
+              ) : (
+                <div className="flex flex-col gap-2 flex-1">
+                  {/* Toolbar row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Lecture content
+                      </label>
+                      <button
+                        onClick={() => setShowHints(true)}
+                        className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 hover:border-light-teal hover:text-light-teal transition-all text-xs font-semibold flex items-center justify-center"
+                        title="Markdown syntax guide"
+                      >
+                        ?
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedLecture && (
+                        <>
+                          <button
+                            onClick={() => setShowPreview(true)}
+                            className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-light-teal hover:text-light-teal transition-all"
+                          >
+                            Preview
+                          </button>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[selectedLecture.type]}`}
+                          >
+                            {selectedLecture.type}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                <textarea
-                  className="w-full flex-1 min-h-[220px] resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
-                  placeholder={
-                    selectedLecture
-                      ? "Edit lecture markdown here..."
-                      : "← Select a lecture to start editing"
-                  }
-                  value={currentContent}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  disabled={!selectedId}
-                />
+                  <textarea
+                    className="w-full flex-1 min-h-[220px] resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
+                    placeholder={
+                      selectedLecture
+                        ? "Edit lecture markdown here..."
+                        : "← Select a lecture to start editing"
+                    }
+                    value={edits[selectedId || ""] || ""}
+                    onChange={(e) => handleContentChange(e.target.value)}
+                    disabled={!selectedId}
+                  />
 
-                <button
-                  onClick={handleEnhance}
-                  disabled={!selectedId || isEnhancing}
-                  className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
-                </button>
-              </div>
+                  <div>
+                    {!!selectedLecture &&
+                      selectedLecture?.tags?.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-block bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md mr-2 mb-2"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                  </div>
+
+                  <button
+                    onClick={handleEnhance}
+                    disabled={!selectedId || isEnhancing}
+                    className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
+                  </button>
+
+                  <button
+                    onClick={handleGenerateQuiz}
+                    disabled={!selectedId || isEnhancing}
+                    className="w-full py-2 rounded-xl border-2 border-[--secondary-2] text-[--secondary-2] text-sm font-medium hover:bg-[--secondary-2] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isEnhancing ? "Enhancing..." : "✦ Generate Quiz"}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* RIGHT */}
             <div className="w-1/2 flex flex-col p-5 gap-3">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Generated lectures
-              </label>
+              {isLoading ? (
+                <div className="flex-1 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-gray-200 animate-pulse">
+                  {/* <div
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      padding: "10px",
+                    }}
+                  >
+                    {data}
+                  </div> */}
+                  <span className="whitespace-pre-line p-5 max-h-[520px] overflow-y-auto text-xs text-gray-500">
+                    {data}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col justify-between flex-1">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Generated lectures
+                    </label>
 
-              <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-[520px] pr-1">
-                {MOCK_LECTURES.map((lecture, i) => {
-                  const isSelected = selectedId === lecture.id;
-                  const isDirty = edits[lecture.id] !== lecture.content;
+                    <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-[520px] pr-1">
+                      {lectures.map((lecture, i) => {
+                        const isSelected = selectedId === lecture.id;
+                        const isDirty =
+                          edits[lecture.id] !== lecture.description;
 
-                  return (
-                    <button
-                      key={lecture.id}
-                      onClick={() => handleSelectLecture(lecture.id)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all
+                        return (
+                          <button
+                            key={lecture.id}
+                            onClick={() => handleSelectLecture(lecture.id)}
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition-all
                                                 ${
                                                   isSelected
                                                     ? "border-light-teal bg-light-teal/5 shadow-sm"
                                                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                                                 }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs text-gray-400 shrink-0">
-                            #{i + 1}
-                          </span>
-                          <span className="text-sm font-medium text-gray-800 truncate">
-                            {lecture.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isDirty && (
-                            <span
-                              className="w-1.5 h-1.5 rounded-full bg-yellow"
-                              title="Unsaved changes"
-                            />
-                          )}
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[lecture.type]}`}
                           >
-                            {lecture.type}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                className="mt-2 w-full py-2.5 rounded-xl border-2 border-dark-teal text-dark-teal text-sm font-semibold hover:bg-dark-teal hover:text-white transition-all"
-              >
-                Review & Submit
-              </button>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs text-gray-400 shrink-0">
+                                  #{i + 1}
+                                </span>
+                                <span className="text-sm font-medium text-gray-800 truncate">
+                                  {lecture.title}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {isDirty && (
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-yellow"
+                                    title="Unsaved changes"
+                                  />
+                                )}
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[lecture.type]}`}
+                                >
+                                  {lecture.type}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSubmit}
+                    className="mt-2 w-full py-2.5 rounded-xl border-2 border-dark-teal text-dark-teal text-sm font-semibold hover:bg-dark-teal hover:text-white transition-all"
+                  >
+                    Review & Submit
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

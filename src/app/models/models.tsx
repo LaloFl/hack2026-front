@@ -15,7 +15,14 @@ export interface Training {
 
 export interface Lecture {
   id: string;
-  title: string;
+  title?: string;
   type: "Lecture" | "Quiz";
-  content: string;
+  description?: string;
+  quiz_questions?: QuizQuestion[];
+  tags?: string[];
+}
+
+export interface QuizQuestion {
+  question: string;
+  options: { option: string; is_correct: boolean }[];
 }
