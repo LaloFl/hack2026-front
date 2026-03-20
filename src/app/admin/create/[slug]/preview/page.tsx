@@ -119,7 +119,7 @@ export default function Preview({ lectures }: PreviewProps) {
       </div>
 
       <div className="w-full flex flex-col gap-4 px-12 py-8">
-        {lectures.map((lecture, index) => (
+        {lectures?.map((lecture, index) => (
           <Dropdown
             key={index}
             title={lecture.title}

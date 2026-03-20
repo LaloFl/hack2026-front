@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lecture } from "@/app/models/models";
+import { Lecture, Quiz } from "@/app/models/models";
 import { MOCK_TRAININGS } from "@/app/models/mocks";
 import {
   MarkdownHintModal,
@@ -11,6 +11,7 @@ import {
   renderMarkdown,
   TYPE_STYLES,
 } from "@/utils/markdown";
+import QuizDisplay from "../../components/QuizDisplay";
 
 interface PageProps {
   params: Promise<{
@@ -97,143 +98,265 @@ export default function Page({ params }: PageProps) {
 
   const [data, setData] = useState("");
   const [lectures, setLectures] = useState<Lecture[]>([]);
+  const [quizes, setQuizes] = useState<Quiz[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch the streaming endpoint
-        const response = await fetch(
-          `http://localhost:8000/generate-course-stream?transcript_name=${encodeURIComponent(slug)}.txt`,
-        );
-        if (!response.ok || !response.body) {
-          throw new Error("Failed to fetch stream");
-        }
-
-        // Get a reader from the response body and a decoder for text
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let accumulatedData = "";
-
-        // Read the stream chunk by chunk
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-          // Decode the chunk (Uint8Array) into a string
-          const chunk = decoder.decode(value, { stream: true });
-          accumulatedData += chunk;
-          // Update the state with the accumulated data, triggering re-renders
-          setData(accumulatedData);
-        }
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("An unknown error occurred.");
-        }
-      } finally {
-        const response = await fetch(`http://localhost:8000/courses/${slug}`);
-        const data: { lectures: Lecture[] } = await response.json();
-        data.lectures.forEach((lecture: any) => {
-          lecture.id = crypto.randomUUID();
-          lecture.type = "Lecture";
-        });
-        setLectures(data.lectures);
-        setEdits(
-          Object.fromEntries(
-            data.lectures.map((l) => [l.id, l.description || ""]),
-          ),
-        );
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const trainingName =
-    MOCK_TRAININGS.find((t) => t.lectures[0]?.lecture_id === slug)?.name ??
-    "Unknown Training";
-
   const [edits, setEdits] = useState<Record<string, string>>(
-    Object.fromEntries(lectures.map((l) => [l.id, l.description || ""])),
+    Object.fromEntries(lectures?.map((l) => [l.id, l.description || ""])),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+  const streamPreviewRef = useRef<HTMLDivElement | null>(null);
+
+  const trainingName =
+    MOCK_TRAININGS.find((t) => t.lectures[0]?.lecture_id === slug)?.name ??
+    "Unknown Training";
 
   function handleSelectLecture(id: string) {
+    setSelectedQuiz(null);
+    setShowQuizModal(false);
     setSelectedId(id);
     setSelectedLecture(lectures.find((l) => l.id === id) ?? null);
   }
 
-  function handleContentChange(value: string) {
-    if (!selectedId) return;
-    setEdits((prev) => ({ ...prev, [selectedId]: value }));
+  function handleSelectQuiz(id: string) {
+    setSelectedLecture(null);
+    setSelectedId(id);
+    setSelectedQuiz(quizes.find((q) => q.id === id) ?? null);
+    setShowQuizModal(true);
   }
 
-  async function handleEnhance() {
-    if (!selectedId) return;
-    setIsEnhancing(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setEdits((prev) => ({
-      ...prev,
-      [selectedId]:
-        prev[selectedId] + "\n\n> ✨ Enhanced content will be appended here.",
-    }));
-    setIsEnhancing(false);
+  function handleContentChange(value: string) {
+    if (!selectedLecture) return;
+    setSelectedLecture({ ...selectedLecture, description: value });
+    setLectures((prev) =>
+      prev.map((lec) =>
+        lec.id === selectedLecture.id ? { ...lec, description: value } : lec,
+      ),
+    );
   }
+
+  const handleGenerateLectures = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const body = { course_id: slug, title: trainingName, description: "", transcript_name: `${slug}.txt` }
+      const response = await fetch(
+        `http://localhost:8000/generate-course-stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+      );
+      if (!response.ok || !response.body) {
+        throw new Error("Failed to fetch stream");
+      }
+
+      // Get a reader from the response body and a decoder for text
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedData = "";
+
+      // Read the stream chunk by chunk
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          accumulatedData += decoder.decode();
+          setData(accumulatedData);
+          console.log("Stream complete");
+          break;
+        }
+        // Decode the chunk (Uint8Array) into a string
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedData += chunk;
+        console.log("Received chunk:", chunk);
+        // Update the state with the accumulated data, triggering re-renders
+        setData(accumulatedData);
+        // Scroll to bottom to show new content
+        if (streamPreviewRef.current) {
+          streamPreviewRef.current.scrollTop =
+            streamPreviewRef.current.scrollHeight;
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred.");
+      }
+    } finally {
+      const response = await fetch(`http://localhost:8000/courses/${slug}`);
+      const data: { lectures: Lecture[]; quizes: Quiz[] } = await response.json();
+      if (!response.ok) {
+        setError("Failed to fetch lectures");
+        setLoading(false);
+        return;
+      }
+      if (!data.lectures || data.lectures.length === 0) {
+        setError("No lectures found for this course");
+        setLoading(false);
+        return;
+      }
+
+      data.lectures.forEach((lecture: any) => {
+        lecture.id = crypto.randomUUID();
+        lecture.type = "Lecture";
+      });
+      setLectures(data.lectures);
+      if (data.quizes) {
+        setQuizes(data.quizes);
+      }
+      setEdits(
+        Object.fromEntries(
+          data.lectures.map((l) => [l.id, l.description || ""]),
+        ),
+      );
+      setLoading(false);
+    }
+  };
+
+  async function handleEnhance() {
+    if (!selectedLecture) return;
+    setIsEnhancing(true);
+
+    try {
+      const response = await fetch("http://localhost:8000/enhance-lesson-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          course_id: slug,
+          lesson_id: selectedLecture.id,
+          lesson_name: selectedLecture.title,
+          lesson_content: selectedLecture.description,
+        }),
+      });
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedContent = "";
+      // Clean the existing content before streaming new enhancement
+      setSelectedLecture({ ...selectedLecture, description: "" });
+
+      // Read the stream and update content in real-time
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        streamedContent += chunk;
+
+        // Update the textarea with the streamed content
+        setSelectedLecture((prev) =>
+          prev ? { ...prev, description: streamedContent } : prev,
+        );
+
+        setEdits((prev) => ({
+          ...prev,
+          [selectedLecture.id]: streamedContent,
+        }));
+
+        // Scroll to bottom to show new content
+        const textarea = document.querySelector("textarea");
+        if (textarea) {
+          textarea.scrollTop = textarea.scrollHeight;
+        }
+      }
+
+      // Update the list of lectures with the enhanced content
+      setLectures((prev) =>
+        prev.map((lec) =>
+          lec.id === selectedLecture.id ? { ...lec, content: streamedContent } : lec,
+        ),
+      );
+    } catch (error) {
+      console.error("Enhancement failed:", error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  }
+
+
+  async function loadLectures() {
+    setLoading(true);
+    setError(null);
+    const response = await fetch(`http://localhost:8000/courses/${slug}`);
+    const data: { lectures: Lecture[]; quizes: Quiz[] } = await response.json();
+    if (!response.ok) {
+      setError("Failed to fetch lectures");
+      setLoading(false);
+      return;
+    }
+    if (!data || !data.lectures || data.lectures.length === 0) {
+      setError("No lectures found for this course");
+      setLoading(false);
+      return;
+    }
+
+    data.lectures.forEach((lecture: any) => {
+      lecture.id = crypto.randomUUID();
+      lecture.type = "Lecture";
+    });
+    setLectures(data.lectures);
+    console.log("Fetched lectures:", data.quizes);
+    if (quizes) {
+      setQuizes(data.quizes);
+    }
+    setEdits(
+      Object.fromEntries(
+        data.lectures.map((l) => [l.id, l.description || ""]),
+      ),
+    );
+    setLoading(false);
+  }
+
 
   async function handleGenerateQuiz() {
     if (!selectedId) return;
     setIsEnhancing(true);
     const quizId = crypto.randomUUID();
-    const quizJson: Lecture = {
-      id: quizId,
-      type: "Quiz",
-      quiz_questions: [
-        {
-          question: "What is the capital of France?",
-          options: [
-            { option: "Paris", is_correct: true },
-            { option: "London", is_correct: false },
-            { option: "Berlin", is_correct: false },
-            { option: "Madrid", is_correct: false },
-          ],
-        },
-      ],
-      tags: selectedLecture?.tags,
-    };
-    quizJson.title = `Quiz for: ${selectedLecture?.title}`;
-    setLectures([...lectures, quizJson as Lecture]);
-    const quizContent =
-      quizJson?.quiz_questions
-        ?.map(
-          (q) =>
-            `?> ${q.question}\n` +
-            q.options
-              .map((o) => `${o.is_correct ? "* " : "- "}${o.option}`)
-              .join("\n"),
-        )
-        .join("\n\n") + "\n\n";
-    setEdits((prev) => ({
-      ...prev,
-      [quizId]: quizContent,
-    }));
+    const response = await fetch("http://localhost:8000/generate-quiz", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        course_id: slug,
+        lesson_content: selectedLecture?.description,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to generate quiz");
+      setIsEnhancing(false);
+      return;
+    }
+    await loadLectures();
     setIsEnhancing(false);
   }
 
   function handleSubmit() {
-    sessionStorage.setItem("lectureEdits", JSON.stringify(edits));
     router.push(`/admin/create/${slug}/preview`);
   }
+
+  useEffect(() => {
+
+    loadLectures();
+  }, []);
+
 
   return (
     <>
@@ -245,6 +368,26 @@ export default function Page({ params }: PageProps) {
           content={edits[selectedId || ""] || ""}
           onClose={() => setShowPreview(false)}
         />
+      )}
+      {showQuizModal && selectedQuiz && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/55 backdrop-blur-sm"
+          onClick={() => setShowQuizModal(false)}
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowQuizModal(false)}
+              className="absolute top-3 right-3 z-10 rounded-full bg-white/90 hover:bg-white text-gray-700 w-9 h-9 flex items-center justify-center shadow"
+              aria-label="Close quiz modal"
+            >
+              ✕
+            </button>
+            <QuizDisplay quiz={selectedQuiz} />
+          </div>
+        </div>
       )}
 
       <div className="flex justify-center items-start p-6 w-full min-h-screen bg-gray-50">
@@ -289,87 +432,95 @@ export default function Page({ params }: PageProps) {
                   <p>Loading lectures...</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 flex-1">
-                  {/* Toolbar row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Lecture content
-                      </label>
-                      <button
-                        onClick={() => setShowHints(true)}
-                        className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 hover:border-light-teal hover:text-light-teal transition-all text-xs font-semibold flex items-center justify-center"
-                        title="Markdown syntax guide"
-                      >
-                        ?
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedLecture && (
-                        <>
-                          <button
-                            onClick={() => setShowPreview(true)}
-                            className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-light-teal hover:text-light-teal transition-all"
-                          >
-                            Preview
-                          </button>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[selectedLecture.type]}`}
-                          >
-                            {selectedLecture.type}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                <>
+                  {selectedLecture && (
+                    <>
+                      <div className="flex flex-col gap-2 flex-1">
+                        {/* Toolbar row */}
+                        <div className="flex items-center justify-between">
 
-                  <textarea
-                    className="w-full flex-1 min-h-[220px] resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
-                    placeholder={
-                      selectedLecture
-                        ? "Edit lecture markdown here..."
-                        : "← Select a lecture to start editing"
-                    }
-                    value={edits[selectedId || ""] || ""}
-                    onChange={(e) => handleContentChange(e.target.value)}
-                    disabled={!selectedId}
-                  />
 
-                  <div>
-                    {!!selectedLecture &&
-                      selectedLecture?.tags?.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-block bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md mr-2 mb-2"
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Lecture content
+                            </label>
+                            <button
+                              onClick={() => setShowHints(true)}
+                              className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 hover:border-light-teal hover:text-light-teal transition-all text-xs font-semibold flex items-center justify-center"
+                              title="Markdown syntax guide"
+                            >
+                              ?
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {selectedLecture && (
+                              <>
+                                <button
+                                  onClick={() => setShowPreview(true)}
+                                  className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:border-light-teal hover:text-light-teal transition-all"
+                                >
+                                  Preview
+                                </button>
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES[selectedLecture.type]}`}
+                                >
+                                  {selectedLecture.type}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <textarea
+                          className="w-full flex-1 min-h-[220px] resize-none rounded-xl text-[10px] border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-light-teal/40 focus:border-light-teal transition-all placeholder:text-gray-300"
+                          placeholder={
+                            selectedLecture
+                              ? "Edit lecture markdown here..."
+                              : "← Select a lecture to start editing"
+                          }
+                          value={edits[selectedId || ""] || ""}
+                          onChange={(e) => handleContentChange(e.target.value)}
+                          disabled={!selectedId}
+                        />
+
+                        <div>
+                          {!!selectedLecture &&
+                            selectedLecture?.tags?.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-block bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-md mr-2 mb-2"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                        </div>
+
+                        <button
+                          onClick={handleEnhance}
+                          disabled={!selectedId || isEnhancing}
+                          className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {tag}
-                        </span>
-                      ))}
-                  </div>
+                          {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
+                        </button>
 
-                  <button
-                    onClick={handleEnhance}
-                    disabled={!selectedId || isEnhancing}
-                    className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
-                  </button>
-
-                  <button
-                    onClick={handleGenerateQuiz}
-                    disabled={!selectedId || isEnhancing}
-                    className="w-full py-2 rounded-xl border-2 border-[--secondary-2] text-[--secondary-2] text-sm font-medium hover:bg-[--secondary-2] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {isEnhancing ? "Enhancing..." : "✦ Generate Quiz"}
-                  </button>
-                </div>
+                        <button
+                          onClick={handleGenerateQuiz}
+                          disabled={!selectedId || isEnhancing}
+                          className="w-full py-2 rounded-xl border-2 border-[--secondary-2] text-[--secondary-2] text-sm font-medium hover:bg-[--secondary-2] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isEnhancing ? "Enhancing..." : "✦ Generate Quiz"}
+                        </button>
+                      </div>
+                    </>)}
+                </>
               )}
             </div>
 
             {/* RIGHT */}
             <div className="w-1/2 flex flex-col p-5 gap-3">
               {isLoading ? (
-                <div className="flex-1 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-gray-200 animate-pulse">
+                <div className="flex-1 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-gray-200 animate-pulse max-h-[320px] overflow-scroll">
                   {/* <div
                     style={{
                       whiteSpace: "pre-wrap",
@@ -378,19 +529,34 @@ export default function Page({ params }: PageProps) {
                   >
                     {data}
                   </div> */}
-                  <span className="whitespace-pre-line p-5 max-h-[520px] overflow-y-auto text-xs text-gray-500">
+                  <div
+                    ref={streamPreviewRef}
+                    className="whitespace-pre-line p-5 overflow-y-auto text-xs text-gray-500 h-full w-full"
+                  >
                     {data}
-                  </span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col justify-between flex-1">
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Generated lectures
-                    </label>
+                    {lectures && lectures.length > 0 && (
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Generated lectures
+                      </label>
+                    )}
+
+                    {/* If theres no lectures add a button to generate it */}
+                    {(!lectures || lectures.length === 0) && (
+                      <button
+                        onClick={handleGenerateLectures}
+                        className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Generate Lectures With AI
+                      </button>
+                    )}
 
                     <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-[520px] pr-1">
-                      {lectures.map((lecture, i) => {
+                      {lectures?.map((lecture, i) => {
                         const isSelected = selectedId === lecture.id;
                         const isDirty =
                           edits[lecture.id] !== lecture.description;
@@ -400,11 +566,10 @@ export default function Page({ params }: PageProps) {
                             key={lecture.id}
                             onClick={() => handleSelectLecture(lecture.id)}
                             className={`w-full text-left px-4 py-3 rounded-xl border transition-all
-                                                ${
-                                                  isSelected
-                                                    ? "border-light-teal bg-light-teal/5 shadow-sm"
-                                                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                                                }`}
+                                                ${isSelected
+                                ? "border-light-teal bg-light-teal/5 shadow-sm"
+                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                              }`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -432,6 +597,40 @@ export default function Page({ params }: PageProps) {
                           </button>
                         );
                       })}
+
+                      {quizes?.map((quiz, i) => {
+                        const isSelected = selectedId === quiz.id;
+                        return (
+                          <button
+                            key={quiz.id}
+                            onClick={() => handleSelectQuiz(quiz.id)}
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition-all
+                                                ${isSelected
+                                ? "border-light-teal bg-light-teal/5 shadow-sm"
+                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs text-gray-400 shrink-0">
+                                  #{i + 1}
+                                </span>
+                                <span className="text-sm font-medium text-gray-800 truncate">
+                                  {quiz.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_STYLES["Quiz"]}`}
+                                >
+                                  Quiz
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+
                     </div>
                   </div>
                   <button

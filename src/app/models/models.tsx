@@ -22,6 +22,12 @@ export interface Lecture {
   tags?: string[];
 }
 
+export interface Quiz {
+  id: string;
+  name: string;
+  content: QuizQuestion[];
+}
+
 export interface QuizQuestion {
   question: string;
   options: { option: string; is_correct: boolean }[];
