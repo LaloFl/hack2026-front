@@ -1,3 +1,9 @@
+export interface Course {
+  id: string;
+  name: string;
+  activities: Lecture[];
+}
+
 export interface Training {
   id: string;
   name: string;
@@ -15,6 +21,7 @@ export interface Training {
 
 export interface Lecture {
   id: string;
+  index: number;
   title?: string;
   type: "Lecture" | "Quiz";
   description?: string;

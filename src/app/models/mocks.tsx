@@ -1,4 +1,160 @@
-import { Lecture, Training } from "./models";
+import { Course, Lecture, Training } from "./models";
+
+export const MOCK_COURSES: Course[] = [
+  {
+    id: "6266df0975cbf00b1069bd6a",
+    name: "Test Automation with Python",
+    activities: [
+      {
+        id: "1",
+        index: 0,
+        type: "Lecture",
+        title: "Automating Testing in Python: Best Practices and Tools",
+        description:
+          "In this lecture, we will delve into the importance of testing within software development with a focus on automation strategies using Python as our primary language. We'll explore various tools available for writing tests that save time and resources while ensuring code reliability before deployment to production environments. The discussion includes practical examples such as utilizing 'pi_test.sh', understanding the significance of naming test scripts with 'test_', leveraging fixtures, and using assertions in Python testing.",
+        tags: ["Python", "Testing", "Automation"],
+      },
+      {
+        id: "2",
+        index: 1,
+        type: "Lecture",
+        title: "Advanced Testing Techniques with Fixtures in Python",
+        description:
+          "In today's lecture, we will delve into the sophisticated world of testing fixtries and their role in enhancing test coverage and code reuse. We will explore how to create reusable setup functions using decorators like '@pi_test', which can be customized for different content or usage scenarios within Python scripts. Our focus will also extend towards parameterizing tests with arguments, allowing us to handle multiple edge cases efficiently.",
+        tags: ["Python", "Testing", "Fixtures"],
+      },
+      {
+        id: "3",
+        index: 2,
+        type: "Lecture",
+        title:
+          "Effective Testing Strategies: Mocking Techniques and Continuous Integration",
+        description:
+          "In this lecture, we delve into advanced testing strategies that enhance code robustness and maintainability in software development. We explore the use of mock objects not just for unit tests but also as a means to simulate specific outputs from functions within our models. By integrating test code with main production stages seamlessly through continuous integration services like Jenkins, we ensure efficient testing workflows without extra space on containers or additional services. The discussion extends into Python's unique challenges in unit testing and the use of tools such as PyTest to measure coverage effectively.",
+        tags: [
+          "Frontend",
+          "Backend",
+          "Full Stack",
+          "DevOps",
+          "Code Review",
+          "Git and GitHub",
+        ],
+      },
+    ],
+  },
+  {
+    id: "621efe0edc2ba109a3da2ba2",
+    name: "Technical Writing in the Software Industry",
+    activities: [
+      {
+        id: "4",
+        index: 0,
+        type: "Lecture",
+        title: "Quantum Computing: The Future Frontier",
+      },
+    ],
+  },
+  {
+    id: "621eff3c2043110a003aa9ca",
+    name: "Physics: Dark Matter and Dark Energy",
+    activities: [
+      {
+        id: "4",
+        index: 0,
+        type: "Lecture",
+        title: "Quantum Computing: The Future Frontier",
+        description:
+          "In today's lecture, we will delve into the fascinating world of quantum computing and its potential to revolutionize various fields by leveraging principles of quantum mechanics. We will explore how these advanced machines operate on qubits that can represent zero or one but also hold multiple states simultaneously through superposition due to their unique properties based on smaller transistors, offering exponential speed-ups in specific tasks like simulating molecules for drug discovery and optimizing large systems.",
+        tags: ["Quantum Computing", "Computational Complexity"],
+      },
+      {
+        id: "5",
+        index: 1,
+        type: "Lecture",
+        title:
+          "Quantum Computing: Challenges, Progress, and the Race for Quantum Supremacy",
+        description:
+          "In this lecture, we will delve into the fascinating world of quantum computing where algorithms aim to solve complex problems like finding an optimal way to visit multiple cities with minimal commute time. Despite being known as the 'traveling salesman's problem', these solutions have broader implications across various fields due to their versatility and efficiency in solving NP-hard problems, which are computationally intractable for classical computers.",
+        tags: [
+          "Quantum Computing",
+          "Computer Science",
+          "Data Structures & Algorithms",
+        ],
+      },
+      {
+        id: "6",
+        index: 2,
+        type: "Lecture",
+        title:
+          "Quantum Computing: Opportunities, Challenges, and the Path Forward",
+        description:
+          "In this lecture, we delve into the fascinating world of quantum computing\u2014a technology that has begun to permeate through various sectors despite its early stage. We explore how current systems are being utilized in specialized areas while acknowledging skepticism about widespread consumer availability and concerns over job obsolescence due to advanced computational capabilities. The discussion touches on the setup, configuration process of quantum computers\u2014a topic that remains somewhat enigmatic even among experts\u2014and highlights potential vulnerabilities in cryptography as we approach a future where these powerful machines become more prevalent.",
+        tags: [
+          "Quantum Computing",
+          "Cryptography",
+          "Efficiency and Algorithms",
+          "System Design",
+        ],
+      },
+      {
+        id: "7",
+        index: 1,
+        type: "Lecture",
+        title:
+          "Frontend and Backend Development Lecture - A Comprehensive Guide to Building Interactive Web Applications",
+        description:
+          "In this lecture, we will delve into the intricain details of Frontend and Backend development with a focus on creating interactive web applications. We'll explore various technologies including React for frontend design using HTML, CSS, JavaScript, TypeScript, Node.js, Vue, Angular, as well as backend frameworks like Spring Boot, Django, Ruby, Ruby on Rails, Flutter, C++, Rust and Go Roadmap to build robust web applications from scratch.",
+        tags: ["Frontend", "Backend"],
+      },
+    ],
+  },
+  {
+    id: "621efe0cdc2ba109a3da2b88",
+    name: "Quantum Computing",
+    activities: [
+      {
+        id: "2",
+        index: 0,
+        type: "Lecture",
+        title: "Technical Writing in the Software Industry",
+        description:
+          "In this lecture, we will explore the critical role of technical writing in the software industry. We will discuss how clear and concise documentation can enhance communication among developers, stakeholders, and end-users. The lecture will cover best practices for creating effective technical documents, including user manuals, API documentation, and internal knowledge bases. We will also examine common challenges faced by technical writers and strategies to overcome them, ensuring that complex technical information is accessible and understandable to a diverse audience.",
+        tags: ["Technical Writing", "Documentation", "Software Industry"],
+      },
+    ],
+  },
+
+  {
+    id: "67e5d77a360e42a2f2c76312",
+    name: "Mastering Innovation Management",
+    activities: [
+      {
+        id: "2",
+        index: 0,
+        type: "Lecture",
+        title: "Technical Writing in the Software Industry",
+        description:
+          "In this lecture, we will explore the critical role of technical writing in the software industry. We will discuss how clear and concise documentation can enhance communication among developers, stakeholders, and end-users. The lecture will cover best practices for creating effective technical documents, including user manuals, API documentation, and internal knowledge bases. We will also examine common challenges faced by technical writers and strategies to overcome them, ensuring that complex technical information is accessible and understandable to a diverse audience.",
+        tags: ["Technical Writing", "Documentation", "Software Industry"],
+      },
+    ],
+  },
+  {
+    id: "657ca50a76635dbbe6e672e6",
+    name: "Six Sigma: DMAIC Method for Effective Improvements",
+    activities: [
+      {
+        id: "2",
+        index: 0,
+        type: "Lecture",
+        title: "Technical Writing in the Software Industry",
+        description:
+          "In this lecture, we will explore the critical role of technical writing in the software industry. We will discuss how clear and concise documentation can enhance communication among developers, stakeholders, and end-users. The lecture will cover best practices for creating effective technical documents, including user manuals, API documentation, and internal knowledge bases. We will also examine common challenges faced by technical writers and strategies to overcome them, ensuring that complex technical information is accessible and understandable to a diverse audience.",
+        tags: ["Technical Writing", "Documentation", "Software Industry"],
+      },
+    ],
+  },
+];
 
 export const MOCK_TRAININGS: Training[] = [
   {
@@ -120,6 +276,7 @@ export const MOCK_TRAININGS: Training[] = [
 export const MOCK_LECTURES: Lecture[] = [
   {
     id: "1",
+    index: 0,
     title: "Introduction to TypeScript",
     type: "Lecture",
     description: `## Introduction to TypeScript
@@ -142,6 +299,7 @@ const active: boolean = true;
   },
   {
     id: "2",
+    index: 1,
     title: "Interfaces and Type Aliases",
     type: "Lecture",
     description: `## Interfaces and Type Aliases
@@ -168,6 +326,7 @@ Use \`type\` for unions, primitives, and more complex compositions.`,
   },
   {
     id: "3",
+    index: 2,
     title: "TypeScript Basics Quiz",
     type: "Quiz",
     description: `## Quiz: TypeScript Basics
@@ -186,6 +345,7 @@ Use \`type\` for unions, primitives, and more complex compositions.`,
   },
   {
     id: "4",
+    index: 3,
     title: "Interfaces and Types Quiz",
     type: "Quiz",
     description: `## Quiz: Interfaces and Types

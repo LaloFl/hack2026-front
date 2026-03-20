@@ -146,15 +146,21 @@ export default function Page({ params }: PageProps) {
     setLoading(true);
     setError(null);
     try {
-      const body = { course_id: slug, title: trainingName, description: "", transcript_name: `${slug}.txt` }
+      const body = {
+        course_id: slug,
+        title: trainingName,
+        description: "",
+        transcript_name: `${slug}.txt`,
+      };
       const response = await fetch(
-        `http://localhost:8000/generate-course-stream`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+        `http://localhost:8000/generate-course-stream`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
         },
-        body: JSON.stringify(body),
-      }
       );
       if (!response.ok || !response.body) {
         throw new Error("Failed to fetch stream");
@@ -194,7 +200,8 @@ export default function Page({ params }: PageProps) {
       }
     } finally {
       const response = await fetch(`http://localhost:8000/courses/${slug}`);
-      const data: { lectures: Lecture[]; quizes: Quiz[] } = await response.json();
+      const data: { lectures: Lecture[]; quizes: Quiz[] } =
+        await response.json();
       if (!response.ok) {
         setError("Failed to fetch lectures");
         setLoading(false);
@@ -228,18 +235,21 @@ export default function Page({ params }: PageProps) {
     setIsEnhancing(true);
 
     try {
-      const response = await fetch("http://localhost:8000/enhance-lesson-stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "http://localhost:8000/enhance-lesson-stream",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            course_id: slug,
+            lesson_id: selectedLecture.id,
+            lesson_name: selectedLecture.title,
+            lesson_content: selectedLecture.description,
+          }),
         },
-        body: JSON.stringify({
-          course_id: slug,
-          lesson_id: selectedLecture.id,
-          lesson_name: selectedLecture.title,
-          lesson_content: selectedLecture.description,
-        }),
-      });
+      );
 
       if (!response.body) {
         throw new Error("No response body");
@@ -279,7 +289,9 @@ export default function Page({ params }: PageProps) {
       // Update the list of lectures with the enhanced content
       setLectures((prev) =>
         prev.map((lec) =>
-          lec.id === selectedLecture.id ? { ...lec, content: streamedContent } : lec,
+          lec.id === selectedLecture.id
+            ? { ...lec, content: streamedContent }
+            : lec,
         ),
       );
     } catch (error) {
@@ -288,7 +300,6 @@ export default function Page({ params }: PageProps) {
       setIsEnhancing(false);
     }
   }
-
 
   async function loadLectures() {
     setLoading(true);
@@ -316,13 +327,10 @@ export default function Page({ params }: PageProps) {
       setQuizes(data.quizes);
     }
     setEdits(
-      Object.fromEntries(
-        data.lectures.map((l) => [l.id, l.description || ""]),
-      ),
+      Object.fromEntries(data.lectures.map((l) => [l.id, l.description || ""])),
     );
     setLoading(false);
   }
-
 
   async function handleGenerateQuiz() {
     if (!selectedId) return;
@@ -353,10 +361,8 @@ export default function Page({ params }: PageProps) {
   }
 
   useEffect(() => {
-
     loadLectures();
   }, []);
-
 
   return (
     <>
@@ -438,8 +444,6 @@ export default function Page({ params }: PageProps) {
                       <div className="flex flex-col gap-2 flex-1">
                         {/* Toolbar row */}
                         <div className="flex items-center justify-between">
-
-
                           <div className="flex items-center gap-2">
                             <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Lecture content
@@ -512,7 +516,8 @@ export default function Page({ params }: PageProps) {
                           {isEnhancing ? "Enhancing..." : "✦ Generate Quiz"}
                         </button>
                       </div>
-                    </>)}
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -566,10 +571,11 @@ export default function Page({ params }: PageProps) {
                             key={lecture.id}
                             onClick={() => handleSelectLecture(lecture.id)}
                             className={`w-full text-left px-4 py-3 rounded-xl border transition-all
-                                                ${isSelected
-                                ? "border-light-teal bg-light-teal/5 shadow-sm"
-                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                              }`}
+                                                ${
+                                                  isSelected
+                                                    ? "border-light-teal bg-light-teal/5 shadow-sm"
+                                                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                                }`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -605,10 +611,11 @@ export default function Page({ params }: PageProps) {
                             key={quiz.id}
                             onClick={() => handleSelectQuiz(quiz.id)}
                             className={`w-full text-left px-4 py-3 rounded-xl border transition-all
-                                                ${isSelected
-                                ? "border-light-teal bg-light-teal/5 shadow-sm"
-                                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                              }`}
+                                                ${
+                                                  isSelected
+                                                    ? "border-light-teal bg-light-teal/5 shadow-sm"
+                                                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                                                }`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -630,7 +637,6 @@ export default function Page({ params }: PageProps) {
                           </button>
                         );
                       })}
-
                     </div>
                   </div>
                   <button
