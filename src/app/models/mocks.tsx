@@ -1,9 +1,6 @@
-"use client";
+import { Lecture, Training } from "./models";
 
-import { useRouter } from "next/navigation";
-
-// Replace with your real API call
-const MOCK_TRAININGS: Training[] = [
+export const MOCK_TRAININGS: Training[] = [
   {
     id: "6266df0975cbf00b1069bd6a",
     name: "Test Automation with Python",
@@ -120,86 +117,89 @@ const MOCK_TRAININGS: Training[] = [
   },
 ];
 
-function TrainingCard({ training }: { training: Training }) {
-  const router = useRouter();
+export const MOCK_LECTURES: Lecture[] = [
+  {
+    id: "1",
+    title: "Introduction to TypeScript",
+    type: "Lecture",
+    content: `## Introduction to TypeScript
 
-  return (
-    <div className="w-[300px] rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
-      {/* Header image */}
-      <div className="h-[160px] bg-gray-100 overflow-hidden relative">
-        <img
-          src={training.primary_image_url}
-          alt={training.name}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
-        {/* Fallback gradient when no image */}
-        <div className="absolute inset-0 bg-brand-gradient opacity-20 pointer-events-none" />
-      </div>
+TypeScript is a **typed superset of JavaScript** that compiles to plain JavaScript.
 
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        <div className="flex flex-col gap-1 flex-1">
-          <h2 className="text-sm font-semibold text-gray-900 leading-snug">
-            {training.name}
-          </h2>
-          <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">
-            {training.subtitle}
-          </p>
-        </div>
+### Why TypeScript?
+- Catches errors at _compile time_ rather than runtime
+- Provides better IDE support with autocompletion
+- Makes large codebases easier to maintain
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2 pt-1">
-          <button
-            onClick={() =>
-              router.push(`/admin/create/${training.lectures[0].lecture_id}`)
-            }
-            className="w-full py-2 rounded-xl bg-brand-gradient text-white text-xs font-semibold hover:opacity-90 transition-opacity"
-          >
-            ✦ Create lecture
-          </button>
-          <a
-            href={training.training_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-2 rounded-xl border border-gray-200 text-gray-500 text-xs font-medium hover:border-gray-300 hover:text-gray-700 transition-all text-center"
-          >
-            Go to training ↗
-          </a>
-        </div>
-      </div>
-    </div>
-  );
+### Basic Types
+You can annotate variables with types like \`string\`, \`number\`, \`boolean\`, and more.
+
+\`\`\`ts
+const name: string = "Alice";
+const age: number = 30;
+const active: boolean = true;
+\`\`\``,
+  },
+  {
+    id: "2",
+    title: "Interfaces and Type Aliases",
+    type: "Lecture",
+    content: `## Interfaces and Type Aliases
+
+Both **interfaces** and **type aliases** allow you to define the shape of an object.
+
+### Interface
+\`\`\`ts
+interface User {
+  id: string;
+  name: string;
+  age?: number;
 }
+\`\`\`
 
-export default function DashboardPage() {
-  return (
-    <div className="flex justify-center items-start p-6 w-full min-h-screen bg-gray-50">
-      <div className="max-w-[960px] min-w-[350px] w-full flex flex-col gap-6">
-        {/* Header */}
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm px-6 py-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest">
-              Admin
-            </p>
-            <h1 className="text-base font-semibold text-gray-800">
-              Available trainings
-            </h1>
-          </div>
-          <span className="text-xs bg-light-teal/10 text-light-teal border border-light-teal/20 rounded-full px-3 py-1">
-            {MOCK_TRAININGS.length} trainings
-          </span>
-        </div>
+### Type Alias
+\`\`\`ts
+type Status = "active" | "inactive" | "pending";
+\`\`\`
 
-        {/* Cards grid */}
-        <div className="flex flex-wrap gap-4">
-          {MOCK_TRAININGS.map((training) => (
-            <TrainingCard key={training.id} training={training} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+### Key difference
+Use \`interface\` when defining object shapes — it supports _declaration merging_.
+Use \`type\` for unions, primitives, and more complex compositions.`,
+  },
+  {
+    id: "3",
+    title: "TypeScript Basics Quiz",
+    type: "Quiz",
+    content: `## Quiz: TypeScript Basics
+
+?> What is TypeScript?
+- A JavaScript runtime environment
+- A CSS preprocessor
+* A typed superset of JavaScript
+- A backend framework
+
+?> Which of the following is a valid TypeScript type annotation?
+- const name = string "Alice"
+* const name: string = "Alice"
+- const name :: string = "Alice"
+- const string name = "Alice"`,
+  },
+  {
+    id: "4",
+    title: "Interfaces and Types Quiz",
+    type: "Quiz",
+    content: `## Quiz: Interfaces and Types
+
+?> What keyword is used to define an interface in TypeScript?
+- type
+- class
+* interface
+- struct
+
+?> Which syntax correctly defines a union type?
+* type Status = "active" | "inactive"
+- interface Status = "active" | "inactive"
+- type Status = "active" & "inactive"
+- const Status: union = ["active", "inactive"]`,
+  },
+];

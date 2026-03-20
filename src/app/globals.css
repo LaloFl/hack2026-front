@@ -5,6 +5,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary-1: #04a28f;
+  --primary-2: #0058f0;
+  --secondary-1: #334f68;
+  --secondary-2: #fdc86e;
+  --primary-2-hover: #0b5ed7;
+  --text-gray: #ffffff6d;
 }
 
 /* @media (prefers-color-scheme: dark) {
@@ -17,5 +23,5 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Nunito';
+  font-family: "Nunito", "Avenir Next", Avenir;
 }
