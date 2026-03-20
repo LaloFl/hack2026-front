@@ -107,6 +107,8 @@ export default function Page({ params }: PageProps) {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizProgress, setQuizProgress] = useState(0);
   const [showHints, setShowHints] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -325,27 +327,49 @@ export default function Page({ params }: PageProps) {
 
 
   async function handleGenerateQuiz() {
-    if (!selectedId) return;
-    setIsEnhancing(true);
-    const quizId = crypto.randomUUID();
-    const response = await fetch("http://localhost:8000/generate-quiz", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        course_id: slug,
-        lesson_content: selectedLecture?.description,
-      }),
-    });
+    if (!selectedId || !selectedLecture || isGeneratingQuiz) return;
 
-    if (!response.ok) {
-      console.error("Failed to generate quiz");
-      setIsEnhancing(false);
-      return;
+    setIsGeneratingQuiz(true);
+    setQuizProgress(0);
+
+    const expectedDurationMs = 3 * 60 * 1000; // ~3 minutes
+    const progressCeiling = 92;
+    const startedAt = Date.now();
+    const progressTimer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const nextProgress = Math.min(
+        (elapsed / expectedDurationMs) * progressCeiling,
+        progressCeiling,
+      );
+      setQuizProgress(nextProgress);
+    }, 500);
+
+    try {
+      const response = await fetch("http://localhost:8000/generate-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          course_id: slug,
+          lesson_content: selectedLecture.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate quiz");
+      }
+
+      await loadLectures();
+      setQuizProgress(100);
+      await new Promise((resolve) => setTimeout(resolve, 450));
+    } catch (error) {
+      console.error("Failed to generate quiz", error);
+    } finally {
+      window.clearInterval(progressTimer);
+      setIsGeneratingQuiz(false);
+      setQuizProgress(0);
     }
-    await loadLectures();
-    setIsEnhancing(false);
   }
 
   function handleSubmit() {
@@ -498,7 +522,7 @@ export default function Page({ params }: PageProps) {
 
                         <button
                           onClick={handleEnhance}
-                          disabled={!selectedId || isEnhancing}
+                          disabled={!selectedId || isEnhancing || isGeneratingQuiz}
                           className="w-full py-2 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {isEnhancing ? "Enhancing..." : "✦ Enhance with AI"}
@@ -506,11 +530,27 @@ export default function Page({ params }: PageProps) {
 
                         <button
                           onClick={handleGenerateQuiz}
-                          disabled={!selectedId || isEnhancing}
+                          disabled={!selectedId || isEnhancing || isGeneratingQuiz}
                           className="w-full py-2 rounded-xl border-2 border-[--secondary-2] text-[--secondary-2] text-sm font-medium hover:bg-[--secondary-2] hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {isEnhancing ? "Enhancing..." : "✦ Generate Quiz"}
+                          {isGeneratingQuiz
+                            ? `Generating quiz... ${Math.round(quizProgress)}%`
+                            : "✦ Generate Quiz"}
                         </button>
+
+                        {isGeneratingQuiz && (
+                          <div className="w-full mt-2">
+                            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-[--secondary-2] transition-all duration-200"
+                                style={{ width: `${quizProgress}%` }}
+                              />
+                            </div>
+                            <p className="text-[11px] text-gray-500 mt-1">
+                              Creating quiz questions... this can take up to 3 minutes.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </>)}
                 </>
