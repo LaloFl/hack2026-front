@@ -4,8 +4,6 @@ import { MOCK_TRAININGS } from "@/app/models/mocks";
 import { Training } from "@/app/models/models";
 import { useRouter } from "next/navigation";
 
-// Replace with your real API call
-
 function TrainingCard({ training }: { training: Training }) {
   const router = useRouter();
 
