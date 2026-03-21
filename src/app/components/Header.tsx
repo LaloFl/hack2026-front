@@ -1,4 +1,3 @@
-// app/admin/components/AdminLogo.tsx
 "use client";
 
 import Link from "next/link";
@@ -13,7 +12,7 @@ function RoleLogo() {
   }
   return (
     <Link
-      href="/admin/dashboard"
+      href={role === "Admin" ? "/courses" : "/admin/dashboard"}
       className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
     >
       <Image
