@@ -62,72 +62,51 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
 
     const optionStyle = (opt: OptionStyleParams): string => {
         const base =
-            "relative w-full text-left px-5 py-4 rounded-2xl border-2 font-medium text-sm tracking-wide transition-all duration-200 cursor-pointer focus:outline-none";
+            "relative w-full text-left px-4 py-2 rounded-xl border text-sm transition-all duration-200 focus:outline-none";
         if (!revealed) {
             return selected === opt.option
-                ? `${base} border-cyan-400 bg-cyan-500/10 text-cyan-200 shadow-[0_0_0_1px_rgba(34,211,238,0.35)]`
-                : `${base} border-slate-700 bg-slate-900/60 text-slate-300 hover:border-slate-500 hover:bg-slate-800/60`;
+                ? `${base} border-dark-teal bg-dark-teal/10 text-dark-teal cursor-pointer`
+                : `${base} border-gray-200 text-gray-700 hover:border-dark-teal cursor-pointer`;
         }
         if (toBoolean(opt.is_correct))
-            return `${base} border-emerald-400 bg-emerald-500/15 text-emerald-200`;
+            return `${base} border-light-teal bg-light-teal/10 text-light-teal`;
         if (selected === opt.option && !toBoolean(opt.is_correct))
-            return `${base} border-rose-400 bg-rose-500/15 text-rose-200`;
-        return `${base} border-slate-700/50 bg-slate-900/30 text-slate-500`;
+            return `${base} border-red-400 bg-red-50 text-red-600`;
+        return `${base} border-gray-100 text-gray-400 opacity-40`;
     };
 
     return (
-        <div
-            className="flex items-center justify-center p-4 rounded-lg"
-            style={{
-                background:
-                    "radial-gradient(ellipse at 15% 45%, #0f172a 0%, #020617 62%)",
-                fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-            }}
-        >
-            <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
-        .syne { font-family: 'Syne', sans-serif; }
-        .option-btn { transition: border-color 0.15s, background 0.15s, transform 0.1s; }
-        .option-btn:active:not(:disabled) { transform: scale(0.98); }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-up { animation: fadeUp 0.35s ease forwards; }
-        @keyframes pop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
-        .pop { animation: pop 0.3s ease; }
-      `}</style>
-
-            <div className="w-full max-w-xl">
-                {/* Header */}
-                <div className="mb-8 fade-up">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mb-1">
+        <div className="flex items-center justify-center p-4 sm:p-6 bg-gray-50 rounded-xl">
+            <div className="w-full max-w-2xl">
+                <div className="mb-6">
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">
                         Quiz Preview
                     </p>
-                    <h1 className="syne text-3xl font-800 text-white leading-tight">
+                    <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
                         {quiz.name}
                     </h1>
                 </div>
 
                 {finished ? (
-                    /* Results Card */
-                    <div className="fade-up rounded-3xl border border-slate-800 bg-slate-900/80 backdrop-blur p-8 text-center shadow-2xl">
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
                         <div className="mb-6">
-                            <div className="w-24 h-24 mx-auto rounded-full border-4 border-cyan-400 flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(34,211,238,0.22)]">
-                                <span className="syne text-3xl font-bold text-cyan-300">
+                            <div className="w-20 h-20 mx-auto rounded-full border-4 border-light-teal/30 bg-light-teal/10 flex items-center justify-center mb-4">
+                                <span className="text-2xl font-bold text-light-teal">
                                     {score}/{total}
                                 </span>
                             </div>
-                            <h2 className="syne text-2xl font-bold text-white mb-2">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-2">
                                 {score === total
-                                    ? "Perfect score! 🎉"
+                                    ? "Perfect score!"
                                     : score >= total / 2
                                         ? "Well done!"
                                         : "Keep practicing!"}
                             </h2>
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-gray-500 text-sm">
                                 You answered {score} out of {total} questions correctly.
                             </p>
                         </div>
 
-                        {/* Answer Review */}
                         <div className="space-y-3 text-left mb-8">
                             {quiz.content.map((q, i) => {
                                 const chosen = answers[i];
@@ -137,21 +116,21 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
                                     <div
                                         key={i}
                                         className={`p-4 rounded-xl border ${isRight
-                                            ? "border-emerald-700 bg-emerald-900/20"
-                                            : "border-rose-700 bg-rose-900/20"
+                                            ? "border-light-teal/30 bg-light-teal/10"
+                                            : "border-red-200 bg-red-50"
                                             }`}
                                     >
-                                        <p className="text-xs text-slate-400 mb-1">Q{i + 1}</p>
-                                        <p className="text-sm text-slate-200 font-medium mb-2">
+                                        <p className="text-xs text-gray-400 mb-1">Q{i + 1}</p>
+                                        <p className="text-sm text-gray-800 font-medium mb-2">
                                             {q.question}
                                         </p>
                                         {!isRight && (
-                                            <p className="text-xs text-rose-300">
+                                            <p className="text-xs text-red-500">
                                                 Your answer:{" "}
                                                 <span className="font-semibold">{chosen}</span>
                                             </p>
                                         )}
-                                        <p className="text-xs text-emerald-300">
+                                        <p className="text-xs text-light-teal">
                                             Correct: <span className="font-semibold">{correct}</span>
                                         </p>
                                     </div>
@@ -161,29 +140,26 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
 
                         <button
                             onClick={handleRestart}
-                            className="w-full py-4 rounded-2xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 syne font-bold text-sm tracking-wide transition-colors duration-200"
+                            className="w-full py-3 rounded-xl bg-brand-gradient text-white text-sm font-medium hover:opacity-90 transition-opacity"
                         >
                             Try Again
                         </button>
                     </div>
                 ) : (
-                    /* Question Card */
                     <div
                         key={currentQ}
-                        className="fade-up rounded-3xl border border-slate-800 bg-slate-900/80 backdrop-blur shadow-2xl overflow-hidden"
+                        className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden"
                     >
-                        {/* Progress bar */}
-                        <div className="h-1 bg-slate-800">
+                        <div className="h-1 bg-gray-100">
                             <div
-                                className="h-full bg-cyan-400 transition-all duration-500 ease-out"
+                                className="h-full bg-light-teal transition-all duration-500 ease-out"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
 
                         <div className="p-8">
-                            {/* Question counter */}
                             <div className="flex items-center justify-between mb-6">
-                                <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
                                     Question {currentQ + 1} of {total}
                                 </span>
                                 <div className="flex gap-1.5">
@@ -191,55 +167,53 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
                                         <div
                                             key={i}
                                             className={`h-1.5 rounded-full transition-all duration-300 ${i < currentQ
-                                                ? "w-4 bg-cyan-400"
+                                                ? "w-4 bg-light-teal"
                                                 : i === currentQ
-                                                    ? "w-6 bg-cyan-400/60"
-                                                    : "w-4 bg-slate-700"
+                                                    ? "w-6 bg-light-teal/60"
+                                                    : "w-4 bg-gray-200"
                                                 }`}
                                         />
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Question */}
-                            <h2 className="syne text-xl font-bold text-white leading-snug mb-8">
+                            <h2 className="text-lg font-semibold text-gray-900 leading-snug mb-6">
                                 {question.question}
                             </h2>
 
-                            {/* Options */}
                             <div className="space-y-3 mb-8">
                                 {question.options.map((opt, i) => (
                                     <button
                                         key={i}
                                         onClick={() => handleSelect(opt)}
                                         disabled={revealed}
-                                        className={`option-btn ${optionStyle(opt)} w-full`}
+                                        className={optionStyle(opt)}
                                     >
                                         <span className="flex items-center gap-3">
                                             <span
                                                 className={`w-6 h-6 rounded-full border flex-shrink-0 flex items-center justify-center text-xs font-bold transition-colors duration-200 ${revealed && toBoolean(opt.is_correct)
-                                                    ? "border-emerald-400 bg-emerald-400 text-slate-900"
+                                                    ? "border-light-teal bg-light-teal text-white"
                                                     : revealed &&
                                                         selected === opt.option &&
                                                         !toBoolean(opt.is_correct)
-                                                        ? "border-rose-400 bg-rose-400 text-slate-900"
+                                                        ? "border-red-400 bg-red-400 text-white"
                                                         : selected === opt.option
-                                                            ? "border-cyan-400 bg-cyan-400 text-slate-900"
-                                                            : "border-current opacity-50"
+                                                            ? "border-dark-teal bg-dark-teal text-white"
+                                                            : "border-gray-300 text-gray-500"
                                                     }`}
                                             >
                                                 {String.fromCharCode(65 + i)}
                                             </span>
                                             {opt.option}
                                             {revealed && toBoolean(opt.is_correct) && (
-                                                <span className="ml-auto text-emerald-300 text-base">
+                                                <span className="ml-auto text-light-teal text-base">
                                                     ✓
                                                 </span>
                                             )}
                                             {revealed &&
                                                 selected === opt.option &&
                                                 !toBoolean(opt.is_correct) && (
-                                                    <span className="ml-auto text-rose-300 text-base">
+                                                    <span className="ml-auto text-red-500 text-base">
                                                         ✗
                                                     </span>
                                                 )}
@@ -248,12 +222,11 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
                                 ))}
                             </div>
 
-                            {/* Feedback */}
                             {revealed && (
                                 <div
-                                    className={`fade-up mb-6 p-4 rounded-xl border text-sm ${toBoolean(question.options.find((o) => o.option === selected)?.is_correct)
-                                        ? "border-emerald-700 bg-emerald-900/30 text-emerald-200"
-                                        : "border-rose-700 bg-rose-900/30 text-rose-200"
+                                    className={`mb-6 p-3 rounded-xl border text-sm ${toBoolean(question.options.find((o) => o.option === selected)?.is_correct)
+                                        ? "border-light-teal/30 bg-light-teal/10 text-light-teal"
+                                        : "border-red-200 bg-red-50 text-red-600"
                                         }`}
                                 >
                                     {toBoolean(question.options.find((o) => o.option === selected)?.is_correct)
@@ -263,19 +236,18 @@ export default function QuizDisplay({ quiz }: { quiz: Quiz }) {
                                 </div>
                             )}
 
-                            {/* Action Button */}
                             {!revealed ? (
                                 <button
                                     onClick={handleReveal}
                                     disabled={!selected}
-                                    className="w-full py-4 rounded-2xl syne font-bold text-sm tracking-wide transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed bg-cyan-400 hover:bg-cyan-300 text-slate-950"
+                                    className="w-full py-3 rounded-xl bg-brand-gradient text-white text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     Check Answer
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleNext}
-                                    className="pop w-full py-4 rounded-2xl syne font-bold text-sm tracking-wide bg-slate-100 hover:bg-white text-slate-900 transition-colors duration-200"
+                                    className="w-full py-3 rounded-xl border-2 border-dark-teal text-dark-teal text-sm font-semibold hover:bg-dark-teal hover:text-white transition-all"
                                 >
                                     {currentQ + 1 >= total ? "See Results →" : "Next Question →"}
                                 </button>
