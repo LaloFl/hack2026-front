@@ -85,9 +85,6 @@ export function CareerAdvice({
       setLoading(true);
       fetchCareerAdvice();
     }
-
-    // const scrollInterval = setInterval(scrollToElement, 1000);
-    // return () => clearInterval(scrollInterval);
   }, []);
 
   // fetchCareerAdvice();
