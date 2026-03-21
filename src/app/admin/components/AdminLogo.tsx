@@ -1,4 +1,3 @@
-// app/admin/components/AdminLogo.tsx
 "use client";
 
 import Link from "next/link";

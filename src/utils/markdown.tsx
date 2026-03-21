@@ -9,37 +9,57 @@ export const TYPE_STYLES: Record<Lecture["type"], string> = {
 // --- Markdown renderer (no external lib needed) ---
 export function renderMarkdown(content: string): string {
   return content
+    // Code blocks first (before any inline replacements touch their contents)
+    .replace(
+      /```[\w]*\n([\s\S]*?)```/gm,
+      '<pre class="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs font-mono overflow-x-auto my-4"><code>$1</code></pre>',
+    )
+    // Headings
     .replace(
       /^### (.+)$/gm,
-      '<h3 class="text-base font-semibold text-gray-800 mt-4 mb-1">$1</h3>',
+      '<h3 class="text-sm font-semibold text-gray-800 mt-5 mb-1">$1</h3>',
     )
     .replace(
       /^## (.+)$/gm,
-      '<h2 class="text-lg font-semibold text-gray-900 mt-5 mb-2">$1</h2>',
+      '<h2 class="text-base font-semibold text-gray-900 mt-6 mb-2">$1</h2>',
     )
     .replace(
       /^# (.+)$/gm,
-      '<h1 class="text-xl font-bold text-gray-900 mt-6 mb-2">$1</h1>',
+      '<h1 class="text-lg font-bold text-gray-900 mt-6 mb-2">$1</h1>',
     )
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/_(.+?)_/g, "<em>$1</em>")
+    // Inline styles
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    .replace(/_(.+?)_/g, '<em class="italic">$1</em>')
     .replace(
       /`([^`]+)`/g,
       '<code class="bg-gray-100 text-light-teal px-1 py-0.5 rounded text-xs font-mono">$1</code>',
     )
-    .replace(
-      /```[\w]*\n([\s\S]*?)```/g,
-      '<pre class="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs font-mono overflow-x-auto my-3"><code>$1</code></pre>',
-    )
-    .replace(
-      /^- (.+)$/gm,
-      '<li class="ml-4 list-disc text-gray-700 text-sm">$1</li>',
-    )
+    // Blockquote
     .replace(
       /^> (.+)$/gm,
-      '<blockquote class="border-l-4 border-light-teal pl-3 text-gray-500 italic text-sm my-2">$1</blockquote>',
+      '<blockquote class="border-l-2 border-gray-200 pl-3 text-gray-400 italic my-2">$1</blockquote>',
     )
-    .replace(/\n{2,}/g, '<br class="my-2" />');
+    // Wrap consecutive list items in a <ul>
+    .replace(
+      /((?:^- .+$\n?)+)/gm,
+      (match) => {
+        const items = match
+          .trim()
+          .split("\n")
+          .map((line) =>
+            `<li class="text-gray-600">${line.replace(/^- /, "")}</li>`,
+          )
+          .join("");
+        return `<ul class="list-disc list-inside space-y-1 my-3 text-sm">${items}</ul>`;
+      },
+    )
+    // Paragraphs — wrap plain text lines in <p>, skip already-tagged lines
+    .replace(
+      /^(?!<[a-z]).+$/gm,
+      '<p class="text-gray-600 leading-relaxed my-2">$&</p>',
+    )
+    // Clean up excess blank lines between block elements
+    .replace(/\n{2,}/g, "\n");
 }
 
 export function parseQuizMarkdown(markdown: string): QuizQuestion[] {
