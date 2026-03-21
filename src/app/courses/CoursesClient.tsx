@@ -9,7 +9,7 @@ interface CoursesClientProps {
 
 function CourseCard({ training }: { training: Training }) {
     const router = useRouter();
-    const courseId = training.lectures[0]?.lecture_id;
+    const courseId = training.id;
 
     return (
         <div className="w-[300px] rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
@@ -63,6 +63,7 @@ function CourseCard({ training }: { training: Training }) {
 }
 
 export default function CoursesClient({ courses }: CoursesClientProps) {
+    console.log(courses);
     return (
         <div className="flex justify-center items-start p-6 w-full min-h-screen bg-gray-50">
             <div className="max-w-[960px] min-w-[350px] w-full flex flex-col gap-6">
@@ -87,9 +88,9 @@ export default function CoursesClient({ courses }: CoursesClientProps) {
 
                 {/* Cards grid */}
                 {courses.length > 0 && (
-                    <div className="flex flex-wrap gap-4">
-                        {courses.map((training) => (
-                            <CourseCard key={training.id} training={training} />
+                    <div className="flex flex-wrap gap-4" key={1}>
+                        {courses.map((course) => (
+                            <CourseCard key={course.id} training={course} />
                         ))}
                     </div>
                 )}

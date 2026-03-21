@@ -30,7 +30,12 @@ async function getPublishedCourses(): Promise<Training[]> {
 }
 
 export default async function CoursesPage() {
-    const courses = await getPublishedCourses();
+    // const courses = await getPublishedCourses();
+    const data = await fetch('http://localhost:8000/courses')
+    const courses = (await data.json()).map((course: any) => { return { ...course, primary_image_url: MOCK_TRAININGS.find((c) => c.lectures[0].lecture_id === course.id)?.primary_image_url } })
+    // .filter((t: any): t is Training => t !== null);
+    console.log(data)
+    console.log(courses)
 
     return <CoursesClient courses={courses} />;
 }
