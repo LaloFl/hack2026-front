@@ -19,7 +19,6 @@ function estimateMinutes(text?: string): number {
     return Math.ceil(text.trim().split(/\s+/).length / 100);
 }
 
-// --- Quiz card ---
 function QuizCard({ question, options }: QuizQuestion) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -70,7 +69,6 @@ function QuizCard({ question, options }: QuizQuestion) {
     );
 }
 
-// --- Lecture viewer ---
 function LectureViewer({ lecture }: { lecture: Lecture }) {
     const minutes = estimateMinutes(lecture.description);
     return (
@@ -109,7 +107,6 @@ function LectureViewer({ lecture }: { lecture: Lecture }) {
     );
 }
 
-// --- Quiz viewer ---
 function QuizViewer({ quiz }: { quiz: Quiz }) {
     return (
         <div className="flex flex-col gap-6">
@@ -129,7 +126,6 @@ export default function CourseViewer({
     lectures,
     quizes,
 }: CourseViewerProps) {
-    // Assign stable unique keys at the top, once, using index as fallback
     const sidebarItems: SidebarItem[] = useMemo(() => [
         ...lectures.map((l, i) => ({
             kind: "lecture" as const,
@@ -190,7 +186,6 @@ export default function CourseViewer({
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
 
-            {/* Hero banner */}
             <div className="bg-gradient-to-r from-[#2f5074] to-[#44646c] w-full text-white px-12 py-8">
                 <div className="max-w-[1200px] mx-auto flex flex-row gap-6 items-start">
                     {training.primary_image_url && (
@@ -224,7 +219,6 @@ export default function CourseViewer({
                                 <p className="uppercase text-xs text-white/60">min read</p>
                             </div>
                         </div>
-                        {/* Progress bar */}
                         <div className="flex items-center gap-3 mt-1">
                             <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
                                 <div
@@ -240,10 +234,8 @@ export default function CourseViewer({
                 </div>
             </div>
 
-            {/* Body */}
             <div className="flex-1 max-w-[1200px] mx-auto w-full flex gap-6 px-6 py-8 items-start">
 
-                {/* 30% sidebar */}
                 <aside className="w-[30%] shrink-0 flex flex-col gap-2 sticky top-[72px] max-h-[calc(100vh-120px)] overflow-y-auto">
                     <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
                         Contents
@@ -265,7 +257,6 @@ export default function CourseViewer({
                                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                                     }`}
                             >
-                                {/* Completion circle */}
                                 <div
                                     className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${isCompleted
                                         ? "bg-light-teal border-light-teal"
@@ -310,7 +301,6 @@ export default function CourseViewer({
                     })}
                 </aside>
 
-                {/* 70% content */}
                 <main className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-8 flex flex-col gap-6 min-h-[500px] min-w-0">
                     {selectedItem ? (
                         <>
@@ -320,7 +310,6 @@ export default function CourseViewer({
                                 <QuizViewer quiz={selectedItem.data as Quiz} />
                             )}
 
-                            {/* Bottom actions */}
                             <div className="flex items-center justify-between pt-6 border-t border-gray-100 mt-auto">
                                 <button
                                     onClick={() => handleMarkComplete(selectedKey)}
